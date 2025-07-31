@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FetchGPT - StudyFetch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 h-screen flex flex-col">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="dashboard.html" class="text-2xl font-bold text-indigo-600">StudyFetch</a>
+                    <span class="ml-4 text-gray-400">|</span>
+                    <span class="ml-4 text-lg font-medium text-gray-700">FetchGPT</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userName" class="text-gray-700 font-medium"></span>
+                    <button onclick="logout()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Chat Container -->
+    <div class="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Back Button -->
+        <div class="mb-6 flex-shrink-0">
+            <a href="dashboard.html" class="inline-flex items-center text-indigo-600 hover:text-indigo-700">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Chat Header -->
+        <div class="bg-white rounded-t-lg shadow-lg p-6 flex-shrink-0">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-full mr-4">
+                    <i class="fas fa-robot text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">FetchGPT</h1>
+                    <p class="text-gray-600">AI assistant trained on your study materials</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chatMessages" class="bg-white shadow-lg flex-1 overflow-y-auto p-6 border-l border-r border-gray-200">
+            <div class="space-y-4">
+                <!-- Welcome Message -->
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-blue-600 text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="bg-gray-100 rounded-lg px-4 py-2">
+                            <p class="text-gray-800">Hello! I'm FetchGPT, your AI study assistant. I can help you understand concepts from your uploaded PDFs. Ask me anything about your study materials!</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Just now</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="bg-white rounded-b-lg shadow-lg p-6 flex-shrink-0">
+            <form id="chatForm" onsubmit="sendMessage(event)" class="flex space-x-4">
+                <div class="flex-1">
+                    <textarea id="messageInput" 
+                              placeholder="Ask me anything about your study materials..." 
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                              rows="1"
+                              onkeydown="handleKeyDown(event)"></textarea>
+                </div>
+                <button type="submit" 
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Send
+                </button>
+            </form>
+            
+            <!-- Quick Questions -->
+            <div class="mt-4">
+                <p class="text-sm text-gray-600 mb-2">Quick questions:</p>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="quickQuestion('What is physics?')" 
+                            class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors">
+                        Explain key concepts
+                    </button>
+                    <button onclick="quickQuestion('Explain photosynthesis')" 
+                            class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors">
+                        Define important terms
+                    </button>
+                    <button onclick="quickQuestion('What is DNA?')" 
+                            class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors">
+                        Summarize chapters
+                    </button>
+                    <button onclick="quickQuestion('How does gravity work?')" 
+                            class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors">
+                        Practice problems
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('backend/auth/login.php?action=check');
+                const data = await response.json();
+                
+                if (!data.logged_in) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                currentUser = data.user;
+                document.getElementById('userName').textContent = data.user.name;
+                loadChatHistory();
+            } catch (error) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        async function loadChatHistory() {
+            try {
+                const response = await fetch('backend/chat/fetchgpt.php');
+                const data = await response.json();
+                
+                if (data.success && data.chat_history.length > 0) {
+                    const chatMessages = document.getElementById('chatMessages');
+                    const welcomeMessage = chatMessages.querySelector('.space-y-4').innerHTML;
+                    
+                    const historyHtml = data.chat_history.map(chat => `
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 mr-3">
+                                <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-indigo-600 text-sm"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="bg-indigo-100 rounded-lg px-4 py-2">
+                                    <p class="text-gray-800">${chat.message}</p>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">${new Date(chat.timestamp).toLocaleString()}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 mr-3">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-robot text-blue-600 text-sm"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="bg-gray-100 rounded-lg px-4 py-2">
+                                    <p class="text-gray-800">${chat.response}</p>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">${new Date(chat.timestamp).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    chatMessages.querySelector('.space-y-4').innerHTML = welcomeMessage + historyHtml;
+                    scrollToBottom();
+                }
+            } catch (error) {
+                console.error('Error loading chat history:', error);
+            }
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage(event);
+            }
+        }
+
+        function quickQuestion(question) {
+            document.getElementById('messageInput').value = question;
+            sendMessage();
+        }
+
+        async function sendMessage(event) {
+            if (event) event.preventDefault();
+            
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessageToChat(message, 'user');
+            messageInput.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            try {
+                const response = await fetch('backend/chat/fetchgpt.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                
+                // Remove typing indicator
+                removeTypingIndicator();
+                
+                if (data.success) {
+                    addMessageToChat(data.response, 'bot');
+                } else {
+                    addMessageToChat('Sorry, I encountered an error. Please try again.', 'bot');
+                }
+            } catch (error) {
+                removeTypingIndicator();
+                addMessageToChat('Sorry, I encountered a network error. Please try again.', 'bot');
+            }
+        }
+
+        function addMessageToChat(message, sender) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messagesContainer = chatMessages.querySelector('.space-y-4');
+            
+            const isUser = sender === 'user';
+            const messageHtml = `
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-3">
+                        <div class="w-8 h-8 ${isUser ? 'bg-indigo-100' : 'bg-blue-100'} rounded-full flex items-center justify-center">
+                            <i class="fas ${isUser ? 'fa-user text-indigo-600' : 'fa-robot text-blue-600'} text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="${isUser ? 'bg-indigo-100' : 'bg-gray-100'} rounded-lg px-4 py-2">
+                            <p class="text-gray-800">${message}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Just now</p>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.insertAdjacentHTML('beforeend', messageHtml);
+            scrollToBottom();
+        }
+
+        function showTypingIndicator() {
+            const chatMessages = document.getElementById('chatMessages');
+            const messagesContainer = chatMessages.querySelector('.space-y-4');
+            
+            const typingHtml = `
+                <div id="typingIndicator" class="flex items-start">
+                    <div class="flex-shrink-0 mr-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-blue-600 text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="bg-gray-100 rounded-lg px-4 py-2">
+                            <div class="flex space-x-1">
+                                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Typing...</p>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.insertAdjacentHTML('beforeend', typingHtml);
+            scrollToBottom();
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function scrollToBottom() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function logout() {
+            try {
+                await fetch('backend/auth/login.php?action=logout');
+                window.location.href = 'index.html';
+            } catch (error) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Auto-resize textarea
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Check auth on page load
+        checkAuth();
+    </script>
+</body>
+</html>

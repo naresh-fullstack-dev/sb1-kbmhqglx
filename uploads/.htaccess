@@ -1,0 +1,20 @@
+# Prevent direct access to uploaded files
+# Files should only be accessed through the application
+
+# Deny access to all files by default
+<Files "*">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Allow access to PDF files only (for viewing)
+<Files "*.pdf">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+# Prevent execution of PHP files in uploads directory
+<Files "*.php">
+    Order Allow,Deny
+    Deny from all
+</Files>

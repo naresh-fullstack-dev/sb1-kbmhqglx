@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Questions - StudyFetch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="dashboard.html" class="text-2xl font-bold text-indigo-600">StudyFetch</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userName" class="text-gray-700 font-medium"></span>
+                    <button onclick="logout()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <a href="dashboard.html" class="inline-flex items-center text-indigo-600 hover:text-indigo-700">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Configuration Panel -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-lg p-6 sticky top-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Question Generator</h2>
+                    
+                    <!-- PDF Selection -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Select PDFs</label>
+                        <div id="pdfsList" class="space-y-2 max-h-40 overflow-y-auto">
+                            <!-- PDFs will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Difficulty Level -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Difficulty Level</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="difficulty" value="easy" class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700">Easy</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="difficulty" value="medium" checked class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700">Medium</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="difficulty" value="hard" class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700">Hard</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question Types -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Question Types</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" value="mcq" class="text-indigo-600 focus:ring-indigo-500" checked>
+                                <span class="ml-2 text-sm text-gray-700">Multiple Choice</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" value="short_answer" class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700">Short Answer</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" value="long_answer" class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700">Long Answer</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" value="fill_blanks" class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700">Fill in the Blanks</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" value="true_false" class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700">True/False</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" value="assertion_reason" class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700">Assertion-Reason</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Number of Questions -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Number of Questions</label>
+                        <input type="number" id="numQuestions" value="10" min="1" max="50" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <!-- Marks per Question -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Marks per Question</label>
+                        <input type="number" id="marksPerQuestion" value="1" min="1" max="10" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button onclick="generateQuestions()" 
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-md font-medium transition-colors">
+                        <i class="fas fa-magic mr-2"></i>
+                        Generate Questions
+                    </button>
+                </div>
+            </div>
+
+            <!-- Questions Display -->
+            <div class="lg:col-span-2">
+                <div id="questionsContainer" class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="text-center py-12">
+                        <i class="fas fa-question-circle text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-500 mb-2">No Questions Generated Yet</h3>
+                        <p class="text-gray-400">Select PDFs and click "Generate Questions" to get started.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let availablePdfs = [];
+        let generatedQuestions = [];
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('backend/auth/login.php?action=check');
+                const data = await response.json();
+                
+                if (!data.logged_in) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                currentUser = data.user;
+                document.getElementById('userName').textContent = data.user.name;
+                loadPDFs();
+            } catch (error) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        async function loadPDFs() {
+            try {
+                const response = await fetch('backend/pdfs/list_pdfs.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    availablePdfs = data.pdfs;
+                    const pdfsList = document.getElementById('pdfsList');
+                    
+                    if (data.pdfs.length === 0) {
+                        pdfsList.innerHTML = '<p class="text-gray-500 text-sm">No PDFs available. Please upload some PDFs first.</p>';
+                        return;
+                    }
+                    
+                    pdfsList.innerHTML = data.pdfs.map(pdf => `
+                        <label class="flex items-center p-2 hover:bg-gray-50 rounded">
+                            <input type="checkbox" value="${pdf.id}" class="pdf-checkbox text-indigo-600 focus:ring-indigo-500">
+                            <div class="ml-2 flex-1">
+                                <div class="text-sm font-medium text-gray-900">${pdf.title}</div>
+                                <div class="text-xs text-gray-500">${pdf.subject} - ${pdf.chapter}</div>
+                            </div>
+                        </label>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading PDFs:', error);
+            }
+        }
+
+        async function generateQuestions() {
+            const selectedPdfs = Array.from(document.querySelectorAll('.pdf-checkbox:checked')).map(cb => cb.value);
+            
+            if (selectedPdfs.length === 0) {
+                alert('Please select at least one PDF.');
+                return;
+            }
+
+            const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+            const questionTypes = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value).filter(v => v !== '');
+            const numQuestions = parseInt(document.getElementById('numQuestions').value);
+            const marksPerQuestion = parseInt(document.getElementById('marksPerQuestion').value);
+
+            if (questionTypes.length === 0) {
+                alert('Please select at least one question type.');
+                return;
+            }
+
+            // Show loading state
+            document.getElementById('questionsContainer').innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+                    <h3 class="text-xl font-medium text-gray-700 mb-2">Generating Questions...</h3>
+                    <p class="text-gray-500">Please wait while we create your customized questions.</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('backend/generate/questions.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        pdf_ids: selectedPdfs,
+                        difficulty: difficulty,
+                        question_types: questionTypes,
+                        num_questions: numQuestions,
+                        marks_per_question: marksPerQuestion
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    generatedQuestions = data.questions;
+                    displayQuestions(data.questions);
+                } else {
+                    throw new Error(data.message || 'Failed to generate questions');
+                }
+            } catch (error) {
+                document.getElementById('questionsContainer').innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-700 mb-2">Error Generating Questions</h3>
+                        <p class="text-gray-500">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayQuestions(questions) {
+            const questionsContainer = document.getElementById('questionsContainer');
+            
+            const questionsHtml = questions.map((question, index) => {
+                const typeIcon = {
+                    'mcq': 'fas fa-list-ul',
+                    'short_answer': 'fas fa-pencil-alt',
+                    'long_answer': 'fas fa-file-alt',
+                    'fill_blanks': 'fas fa-edit',
+                    'true_false': 'fas fa-check-circle',
+                    'assertion_reason': 'fas fa-balance-scale'
+                };
+
+                const typeLabel = {
+                    'mcq': 'Multiple Choice',
+                    'short_answer': 'Short Answer',
+                    'long_answer': 'Long Answer',
+                    'fill_blanks': 'Fill in the Blanks',
+                    'true_false': 'True/False',
+                    'assertion_reason': 'Assertion-Reason'
+                };
+
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded mr-2">
+                                    Q${index + 1}
+                                </span>
+                                <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded mr-2">
+                                    <i class="${typeIcon[question.type]} mr-1"></i>
+                                    ${typeLabel[question.type]}
+                                </span>
+                                <span class="bg-${question.difficulty === 'easy' ? 'green' : question.difficulty === 'medium' ? 'yellow' : 'red'}-100 text-${question.difficulty === 'easy' ? 'green' : question.difficulty === 'medium' ? 'yellow' : 'red'}-800 text-xs font-medium px-2.5 py-0.5 rounded mr-2">
+                                    ${question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1)}
+                                </span>
+                            </div>
+                            <span class="text-sm text-gray-500">${question.marks} mark${question.marks > 1 ? 's' : ''}</span>
+                        </div>
+                        <p class="text-gray-900 font-medium">${question.question}</p>
+                    </div>
+                `;
+            }).join('');
+
+            questionsContainer.innerHTML = `
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Generated Questions</h2>
+                    <button onclick="downloadQuestions()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        <i class="fas fa-download mr-2"></i>
+                        Download PDF
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    ${questionsHtml}
+                </div>
+            `;
+        }
+
+        function downloadQuestions() {
+            if (generatedQuestions.length === 0) {
+                alert('No questions to download.');
+                return;
+            }
+
+            // Create a simple text version for download
+            let content = 'Generated Questions\n\n';
+            
+            generatedQuestions.forEach((question, index) => {
+                content += `${index + 1}. ${question.question}\n`;
+                content += `   Type: ${question.type}\n`;
+                content += `   Difficulty: ${question.difficulty}\n`;
+                content += `   Marks: ${question.marks}\n\n`;
+            });
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'generated-questions.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        async function logout() {
+            try {
+                await fetch('backend/auth/login.php?action=logout');
+                window.location.href = 'index.html';
+            } catch (error) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Check auth on page load
+        checkAuth();
+    </script>
+</body>
+</html>

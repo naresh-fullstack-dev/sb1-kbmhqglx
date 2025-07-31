@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload PDF - StudyFetch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="dashboard.html" class="text-2xl font-bold text-indigo-600">StudyFetch</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userName" class="text-gray-700 font-medium"></span>
+                    <button onclick="logout()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <a href="dashboard.html" class="inline-flex items-center text-indigo-600 hover:text-indigo-700">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Upload Form -->
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Upload PDF</h1>
+                <p class="text-gray-600">Add new study materials to the platform for students to access.</p>
+            </div>
+
+            <form id="uploadForm" onsubmit="handleUpload(event)" enctype="multipart/form-data">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">PDF Title</label>
+                        <input type="text" id="title" name="title" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                               placeholder="e.g., Introduction to Physics">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                        <input type="text" id="subject" name="subject" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                               placeholder="e.g., Physics">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Chapter</label>
+                        <input type="text" id="chapter" name="chapter" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                               placeholder="e.g., Chapter 1: Mechanics">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">PDF File</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-indigo-400 transition-colors">
+                            <div class="space-y-1 text-center">
+                                <i class="fas fa-file-pdf text-4xl text-gray-400 mb-4"></i>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="pdf-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                        <span>Upload a PDF file</span>
+                                        <input id="pdf-upload" name="pdf" type="file" class="sr-only" accept=".pdf" required onchange="updateFileName(this)">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-gray-500">PDF up to 10MB</p>
+                                <p id="fileName" class="text-sm text-indigo-600 font-medium hidden"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end space-x-4">
+                    <a href="dashboard.html" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-upload mr-2"></i>
+                        Upload PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Uploaded PDFs List -->
+        <div class="mt-8 bg-white rounded-lg shadow-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">Uploaded PDFs</h2>
+            </div>
+            <div class="p-6">
+                <div id="pdfsList" class="space-y-4">
+                    <!-- PDFs will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('backend/auth/login.php?action=check');
+                const data = await response.json();
+                
+                if (!data.logged_in || data.user.role !== 'admin') {
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
+                
+                currentUser = data.user;
+                document.getElementById('userName').textContent = data.user.name;
+                loadPDFs();
+            } catch (error) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        function updateFileName(input) {
+            const fileName = input.files[0]?.name;
+            const fileNameElement = document.getElementById('fileName');
+            
+            if (fileName) {
+                fileNameElement.textContent = fileName;
+                fileNameElement.classList.remove('hidden');
+            } else {
+                fileNameElement.classList.add('hidden');
+            }
+        }
+
+        async function handleUpload(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            
+            try {
+                const response = await fetch('backend/pdfs/upload_pdf.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('PDF uploaded successfully!');
+                    event.target.reset();
+                    document.getElementById('fileName').classList.add('hidden');
+                    loadPDFs();
+                } else {
+                    alert(data.message || 'Upload failed');
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        async function loadPDFs() {
+            try {
+                const response = await fetch('backend/pdfs/list_pdfs.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const pdfsList = document.getElementById('pdfsList');
+                    
+                    if (data.pdfs.length === 0) {
+                        pdfsList.innerHTML = '<p class="text-gray-500 text-center py-8">No PDFs uploaded yet.</p>';
+                        return;
+                    }
+                    
+                    pdfsList.innerHTML = data.pdfs.map(pdf => `
+                        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <div class="flex items-center">
+                                <div class="p-2 bg-red-100 rounded-lg mr-4">
+                                    <i class="fas fa-file-pdf text-red-600"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-900">${pdf.title}</h3>
+                                    <p class="text-sm text-gray-600">${pdf.subject} - ${pdf.chapter}</p>
+                                    <p class="text-xs text-gray-500">Uploaded: ${new Date(pdf.uploaded_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="px-3 py-1 text-sm text-indigo-600 hover:bg-indigo-50 rounded">
+                                    <i class="fas fa-eye mr-1"></i> View
+                                </button>
+                                <button class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded">
+                                    <i class="fas fa-trash mr-1"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading PDFs:', error);
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('backend/auth/login.php?action=logout');
+                window.location.href = 'index.html';
+            } catch (error) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Check auth on page load
+        checkAuth();
+    </script>
+</body>
+</html>

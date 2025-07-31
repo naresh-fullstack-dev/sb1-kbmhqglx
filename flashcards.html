@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards - StudyFetch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .flip-card {
+            perspective: 1000px;
+            width: 100%;
+            height: 300px;
+        }
+        
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .flip-card-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .flip-card-back {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="dashboard.html" class="text-2xl font-bold text-indigo-600">StudyFetch</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userName" class="text-gray-700 font-medium"></span>
+                    <button onclick="logout()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <a href="dashboard.html" class="inline-flex items-center text-indigo-600 hover:text-indigo-700">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <!-- PDF Selection -->
+        <div id="pdfSelection" class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Select PDFs for Flashcards</h2>
+            
+            <div id="pdfsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <!-- PDFs will be loaded here -->
+            </div>
+            
+            <div class="flex justify-center">
+                <button onclick="generateFlashcards()" 
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-md font-medium transition-colors">
+                    <i class="fas fa-magic mr-2"></i>
+                    Generate Flashcards
+                </button>
+            </div>
+        </div>
+
+        <!-- Flashcard Display -->
+        <div id="flashcardContainer" class="hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Study Flashcards</h2>
+                    <div class="flex items-center space-x-4">
+                        <span id="cardCounter" class="text-gray-500 font-medium">1 / 10</span>
+                        <button onclick="showPdfSelection()" class="text-indigo-600 hover:text-indigo-700">
+                            <i class="fas fa-list mr-1"></i> Change PDFs
+                        </button>
+                    </div>
+                </div>
+
+                <div class="max-w-2xl mx-auto">
+                    <!-- Flashcard -->
+                    <div id="flashcard" class="flip-card mb-6">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <div class="text-center">
+                                    <i class="fas fa-question-circle text-3xl mb-4"></i>
+                                    <h3 id="flashcardFront" class="text-xl font-semibold">Click to load flashcards</h3>
+                                </div>
+                            </div>
+                            <div class="flip-card-back">
+                                <div class="text-center">
+                                    <i class="fas fa-lightbulb text-3xl mb-4"></i>
+                                    <p id="flashcardBack" class="text-lg">Answer will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="flex items-center justify-between">
+                        <button id="prevBtn" onclick="previousCard()" 
+                                class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md font-medium transition-colors" disabled>
+                            <i class="fas fa-chevron-left mr-2"></i>
+                            Previous
+                        </button>
+
+                        <div class="flex space-x-4">
+                            <button onclick="flipCard()" 
+                                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md font-medium transition-colors">
+                                <i class="fas fa-sync-alt mr-2"></i>
+                                Flip Card
+                            </button>
+                            
+                            <button onclick="shuffleCards()" 
+                                    class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                                <i class="fas fa-random mr-2"></i>
+                                Shuffle
+                            </button>
+                        </div>
+
+                        <button id="nextBtn" onclick="nextCard()" 
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium transition-colors" disabled>
+                            Next
+                            <i class="fas fa-chevron-right ml-2"></i>
+                        </button>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mt-6">
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div id="progressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let availablePdfs = [];
+        let flashcards = [];
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('backend/auth/login.php?action=check');
+                const data = await response.json();
+                
+                if (!data.logged_in) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                currentUser = data.user;
+                document.getElementById('userName').textContent = data.user.name;
+                loadPDFs();
+            } catch (error) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        async function loadPDFs() {
+            try {
+                const response = await fetch('backend/pdfs/list_pdfs.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    availablePdfs = data.pdfs;
+                    const pdfsList = document.getElementById('pdfsList');
+                    
+                    if (data.pdfs.length === 0) {
+                        pdfsList.innerHTML = '<div class="col-span-full text-center py-8"><p class="text-gray-500">No PDFs available. Please upload some PDFs first.</p></div>';
+                        return;
+                    }
+                    
+                    pdfsList.innerHTML = data.pdfs.map(pdf => `
+                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors">
+                            <label class="flex items-start cursor-pointer">
+                                <input type="checkbox" value="${pdf.id}" class="pdf-checkbox text-indigo-600 focus:ring-indigo-500 mt-1">
+                                <div class="ml-3 flex-1">
+                                    <div class="flex items-start">
+                                        <div class="p-2 bg-red-100 rounded-lg mr-3">
+                                            <i class="fas fa-file-pdf text-red-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-medium text-gray-900">${pdf.title}</h3>
+                                            <p class="text-sm text-gray-600">${pdf.subject}</p>
+                                            <p class="text-xs text-gray-500">${pdf.chapter}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading PDFs:', error);
+            }
+        }
+
+        async function generateFlashcards() {
+            const selectedPdfs = Array.from(document.querySelectorAll('.pdf-checkbox:checked')).map(cb => cb.value);
+            
+            if (selectedPdfs.length === 0) {
+                alert('Please select at least one PDF.');
+                return;
+            }
+
+            try {
+                // First try to get existing flashcards
+                const getResponse = await fetch(`backend/flashcards/get_flashcards.php?pdf_ids=${selectedPdfs.join(',')}`);
+                const getData = await getResponse.json();
+                
+                if (getData.success && getData.flashcards.length > 0) {
+                    flashcards = getData.flashcards;
+                    showFlashcards();
+                    return;
+                }
+
+                // If no existing flashcards, generate new ones
+                const response = await fetch('backend/flashcards/get_flashcards.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        pdf_ids: selectedPdfs
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Get the generated flashcards
+                    const finalResponse = await fetch(`backend/flashcards/get_flashcards.php?pdf_ids=${selectedPdfs.join(',')}`);
+                    const finalData = await finalResponse.json();
+                    
+                    if (finalData.success) {
+                        flashcards = finalData.flashcards;
+                        showFlashcards();
+                    }
+                } else {
+                    alert(data.message || 'Failed to generate flashcards');
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        function showFlashcards() {
+            if (flashcards.length === 0) {
+                alert('No flashcards available for the selected PDFs.');
+                return;
+            }
+
+            document.getElementById('pdfSelection').classList.add('hidden');
+            document.getElementById('flashcardContainer').classList.remove('hidden');
+            
+            currentCardIndex = 0;
+            updateCard();
+            updateControls();
+        }
+
+        function showPdfSelection() {
+            document.getElementById('pdfSelection').classList.remove('hidden');
+            document.getElementById('flashcardContainer').classList.add('hidden');
+        }
+
+        function updateCard() {
+            if (flashcards.length === 0) return;
+
+            const card = flashcards[currentCardIndex];
+            document.getElementById('flashcardFront').textContent = card.front;
+            document.getElementById('flashcardBack').textContent = card.back;
+            document.getElementById('cardCounter').textContent = `${currentCardIndex + 1} / ${flashcards.length}`;
+            
+            // Reset flip state
+            document.getElementById('flashcard').classList.remove('flipped');
+            isFlipped = false;
+            
+            updateProgressBar();
+        }
+
+        function updateControls() {
+            document.getElementById('prevBtn').disabled = currentCardIndex === 0;
+            document.getElementById('nextBtn').disabled = currentCardIndex === flashcards.length - 1;
+        }
+
+        function updateProgressBar() {
+            const progress = ((currentCardIndex + 1) / flashcards.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function flipCard() {
+            const flashcard = document.getElementById('flashcard');
+            flashcard.classList.toggle('flipped');
+            isFlipped = !isFlipped;
+        }
+
+        function nextCard() {
+            if (currentCardIndex < flashcards.length - 1) {
+                currentCardIndex++;
+                updateCard();
+                updateControls();
+            }
+        }
+
+        function previousCard() {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                updateCard();
+                updateControls();
+            }
+        }
+
+        function shuffleCards() {
+            for (let i = flashcards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [flashcards[i], flashcards[j]] = [flashcards[j], flashcards[i]];
+            }
+            
+            currentCardIndex = 0;
+            updateCard();
+            updateControls();
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            if (document.getElementById('flashcardContainer').classList.contains('hidden')) return;
+            
+            switch(event.key) {
+                case 'ArrowLeft':
+                    previousCard();
+                    break;
+                case 'ArrowRight':
+                    nextCard();
+                    break;
+                case ' ':
+                case 'Enter':
+                    event.preventDefault();
+                    flipCard();
+                    break;
+            }
+        });
+
+        async function logout() {
+            try {
+                await fetch('backend/auth/login.php?action=logout');
+                window.location.href = 'index.html';
+            } catch (error) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Check auth on page load
+        checkAuth();
+    </script>
+</body>
+</html>
